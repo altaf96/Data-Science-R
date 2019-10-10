@@ -1,0 +1,147 @@
+---
+title: "BME590 Homework 1"
+author: "Altaful Amin"
+date: "9/13/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+1. Interface with DCC
+a) Connect to DCC using Mac/Linux Command Line or Windows Git Bash
+Answer: Connected to DCC by using: ssh Netid@dcc-slogin.oit.duke.edu
+
+b) What is the path of your personal home directory?
+Answer: The path to my personal home directory is dscrhome/aa547 .
+
+c) How do you move to the root directory from your personal home directory in one
+command?
+Answer: Use this command: cd / .
+
+d) How many items (files, directories, etc.) exist in the root directory of the DCC?
+Answer: There are 27 items in the root directory of the DCC (found using this command: ls -1 | wc -l)
+
+e) How many items (files, directories, etc.) exist on bmb47/BME590?
+Answer: There are 14 items on bmb47/BME590 (found using this command: ls -1 | wc -l) 
+
+f) Who has permission to view your folder contents?
+Answer: Everyone who has access to DCC has permission to view my folder contents.
+
+
+2. Genomics 1000 Project
+a. Information about data: https://www.internationalgenome.org/data/
+
+b. How many individuals are in Phase 3 of the 1000 Genomes Project?
+Answer: 2504 individuals are in Phase 3 of the 1000 Genomes Project.
+
+c. How many variants are in Phase 3 of the 1000 Genomes Project?
+Answer: 84.4 million variants are in Phase 3 of the 1000 Genomes Project.
+
+
+d. How many populations are in Phase 3 of the 1000 Genomes Project?
+Answer: 26 populations are in Phase 3 of the 1000 Genomes Project.
+
+e. How should the 1000 Genomes Project be cited?
+Answer: This is the recommended citation from the IGSR website for 1000 Genomes Project: 
+ A global reference for human genetic variation, The 1000 Genomes Project Consortium, Nature 526, 68-74 (01 October 2015) doi:10.1038/nature15393
+ 
+ 
+3. Download chromosome 20 (Genomics 1000) directly to DCC
+a. VERY IMPORTANT: First, you need to make a temporary directory in the work
+folder (otherwise you will not have enough storage to download the file). You can
+do this with the command: mkdir -p /work/netid
+Answer: Temporary directory made using mkdir -p /work/aa547 .
+
+b. Print working directory to make sure you are in /work/yournetid
+Answer: After using "cd /work/aa547" to change the directory to my work directory, the pwd command showed /work/aa547 as current directory.
+
+c. 1000 genomes example variant data file SIZE: 
+Answer: 326 M (found using this command: ls -l -h ALL*.vcf.gz)
+
+d. What is the extension of the data file?
+Answer: The extension of the data file is .vcf.gz .
+
+e. Look at the header of the zipped file. What is the source?
+Answer: We can use "head ALL*.vcf.gz" to see the header of the zipped file. Although I was not able to see the source because the output was very illegible.
+
+f. Unzip the file containing chromosome 20 data
+Answer: Use this command to unzip: gunzip ALL*.vcf.gz 
+
+g. Look at the first 20 lines of the unzipped file
+Answer: Use this command: head -20 ALL*.vcf
+
+h. Look at the last 5 lines of the unzipped file
+Answer: Use this command: tail -5 ALL*.vcf
+
+i. This is hard to read! Look at the first 7 columns of those lines
+Answer: Use this command: tail -5 ALL*.vcf | cut -f1-7
+
+j. How many lines are in the .vcf file?
+Answer: There are 1813094 lines in the .vcf file (found using this command: wc  -l ALL*.vcf)
+
+k. How large is the .vcf file for Chromosome 20?
+Answer: The .vcf file for Chromosome 20 is 18 G (found using this command: ls -l -h ALL*.vcf)
+
+l. Export Chromosome 20 as csv file using code below.
+Answe: Executed the code to export it as a csv file on my local drive.
+
+
+4. R-Markdown 
+a. Create RMarkdown file. For tips on how to use RMarkdown, see:
+http://rmarkdown.rstudio.com
+Answer: RMarkdown file created using File>New File>R Markdown on RStudio.
+
+b. Load in the csv file we created in the previous question.
+Answer:
+```{r}
+#reading Chromosome 20 csv file into RStudio
+C20 <- read.csv("C:/Users/Altaf/Documents/exampleChr20.csv", sep ="\t", header=TRUE)
+```
+
+c. Use summary to show the summary statistics for the Chromosome 20 dataframe.
+Print the summary.
+Answer:
+```{r}
+#Summary of Chromosome 20 dataframe 
+summary(C20)
+```
+
+
+d. How many of the data points “Pass” the quality test?
+Answer: 500 data points "Pass" the quality test.
+
+e. How many C->T SNPs exist in the data? (Hint- This is where the REF is a C and the
+ALT is a T)
+Answer:
+```{r}
+#Finding C->T SNPs in the data
+
+library(dplyr)
+
+#filter the data for objects that have C in REF and T in ALT
+filtered_data <- filter(C20, C20$REF == 'C', C20$ALT == 'T')
+
+#Use nrow to function to find how many entries were filtered from the original dataframe, which will be the length
+countCT_SNPs <- nrow(filter(C20, C20$REF == 'C', C20$ALT == 'T'))
+```
+After running the R code, there are 116 C->T SNPs in the data.
+
+
+f. Plot a histogram of A,C,T,G in Chromosome 20 dataframe using ggplot2. You may
+have to install.packages(“ggplot2”)
+Answer:
+```{r}
+library(ggplot2)
+
+library(dplyr)
+
+#filter chromosome 20 data frame for A or T or G or C
+
+filter2_c20 <- filter(C20, C20$REF == 'A' | C20$REF == 'T' | C20$REF == 'G'| C20$REF == 'C')
+
+#running ggplot to create histogram of the filetered data
+
+ggplot(data=filter2_c20, aes(x=REF)) + geom_histogram(stat= "count" , color="aquamarine" , fill = "aquamarine")
+```
+
+
+

@@ -1,0 +1,266 @@
+---
+title: "HW2 BME590"
+author: "Altaful Amin"
+date: "9/23/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+1. Get Diabetes Data Set (Use DCC)
+a) Download Diabetes data set from UCI Machine Learning Repository:
+https://archive.ics.uci.edu/ml/datasets/Diabetes in your work folder in the
+DCC.
+
+Ans:The data set was loaded in my work folder in the DCC using:
+wget https://archive.ics.uci.edu/ml/machine-learning-databases/diabetes/diabe
+tes-data.tar.Z
+
+
+b) Extract the tarball in the command line/Git BASH through the DCC
+
+Ans: Extracted using:
+tar -xvf *.Z
+This command unzipped the file and then extracted the contents.
+
+
+c) Look at the list of files contained in the Diabetes-Data directory.
+
+Ans: At first I went into the Diabetes-Data directory using:
+cd Diabetes-Data
+Then I used ls command to see the files in the directory:
+ls
+
+
+d) List all files beginning with the prefix “data-”. View a file from any
+study participant. View the file Data-Codes.
+
+Ans: Use this command to list all files with prefix "data-":
+ls data-*
+
+To view the contents of a study participant, for instance, data-21, use:
+head data-21
+
+To view the file Data-Codes:
+head -100 Data-Codes
+
+e) We are going to make a “decoder” file that you can use as a map to match
+the “Code” field in the file from a single study participant to the meaning 
+behind that code. The meaning behind the code is contained in the file 
+“Data-Codes”. Use the “Grep” command with regular expressions (RegEx) to pull
+out every line beginning with a numeric, and output these lines into a new
+file called “decoder.txt”.
+
+Ans: Use this command:
+grep ^ [0-9] Data-Codes > decoder.txt
+
+
+f) Choose any of the participants, and export their file from Diabetes data 
+(data-*) to your local directory. Also export your decoder.txt file.
+
+Ans: I chose data-21 to work with. At first, I logged into sftp. Then I set the Diabetes-Data 
+as my working direcory by using: cd /work/aa547/Diabetes-Data
+Then I set my local computer as another directory by:
+lcd /c/Users/Altaf/Documents
+
+To fetch data-21:
+get Diabetes-Data/data-21
+
+To fetch decoder.txt:
+get decoder.txt
+
+
+2. Summarizing Data (R)
+a) Read the two files that you now have stored locally into R (the two files
+should be
+“decoder.txt” and “data-*”) and assign them variable names.
+Ans:
+```{r setup, include=FALSE}
+library(dplyr)
+library(xtable)
+
+
+#read patient 21 data and set the header names
+p21 <- read.delim("C:\\Users\\Altaf\\Documents\\data-21", header = F,
+                  col.names = c("Date", "Time" , "Code", "Value"))
+```
+
+```{r}
+# read the decoder and convert it into a table with two columns and set
+#header names
+library(xtable)
+dcd <-   read.delim("C:\\Users\\Altaf\\Documents\\decoder.txt", sep = "=",
+                  header = F,
+                  col.names = c("Code","Meaning"))
+```
+
+b) Join the two dataframes into one new dataframe using the merge command.
+Assign this new dataframe the variable name “merged.df”. What are the column 
+names of merged.df?
+
+Ans:
+```{r}
+#merging the two data frames. Both dataframes have the "Code" column, 
+#so they will be merged in relation to them.
+#We also need to make the Code column a factor before merging can occur.
+
+p21$Code <- as.factor(p21$Code)
+
+merge.df <- merge(p21, dcd, by="Code")
+
+#The column names of merge.df are:Code, Date, Time, Value, Meaning
+```
+c) Select the 3 pre-meal blood glucose measurements (pre-breakfast,
+pre-lunch, and predinner). Create a table reporting any relevant summary 
+statistics. Provide any interpretation.
+
+Ans:
+```{r}
+#filter the merge.df file to contain only pre-meal blood glucose value. We 
+#can do this by filtering the Code column with the codes for pre-breakfast,
+#pre-lunch and pre-dinner.
+
+filter_p21 <- filter(merge.df, merge.df$Code == 58 | merge.df$Code == 60 | merge.df$Code == 62)
+
+filter_p21$Code = as.factor(filter_p21$Code)
+
+#summary statistics
+summary(filter_p21)
+```
+The number of measurements before breakfast, lunch and dinner are not equal to each other, so 
+there are some dates when all three measurements were not taken. We will possibly have some cells
+with NA in the data frame.
+
+
+
+3. Working with Dates (R)
+a) Use ggplot to display the 3 blood glucose measurements over time.
+Ans:
+```{r}
+
+#We need to combine the Date and Time into one variable before we plot the
+#data
+library(lubridate)
+library(ggplot2)
+```
+```{r}
+#we make a date.time column using the lubridate package
+filter_p21$Date.Time = mdy_hm(paste(filter_p21$Date, filter_p21$Time))
+
+```
+```{r}
+#we change the code from numbers to names for easier reading
+filter_p21$Code <- filter_p21$Code[, drop=TRUE] #deletes empty levels 
+levels(filter_p21$Code) <- c("breakfast", "lunch", "supper")
+```
+```{r}
+#plotting the Value over Date.Time
+ ggplot(filter_p21, aes(x=Date.Time, y=Value, group= Code, color = Code)) + 
+  facet_wrap(~Code)  + geom_line()
+```
+b) Using the 3 meal measurements from above, align the data on a daily
+basis,i.e. transform the data to a wider format where each line represents a
+day and has a measurement perperson. Comment on any generated missing data. 
+
+Ans:
+
+```{r}
+#we can widen the data using casting function from reshape2 library
+library(reshape2)
+filter_p21.wide <- dcast(filter_p21, Date ~ Code, value.var = "Value")
+
+#transforming the date column into rownames instead of column 1
+wide <- filter_p21.wide[,-1]
+rownames(wide) <- filter_p21.wide[,1]
+
+
+#There are multiple instances of missing data on this patient's measurements,
+#as we predicted
+
+```
+c) Correlation plots are a way to visualize multivariate relationships. Use
+the corrplot package to make a correlation plot. What happens if you ignore
+the missing data?
+Ans: 
+```{r}
+#correlation plot
+ 
+library(corrplot)
+
+M <- cor(wide) #converts data into a correlation matrix before plotting
+corrplot(M, method = "color")
+
+
+```
+```{r}
+#ignore missing data
+newdata <- na.omit(wide) #omits the missing data
+
+O <- cor(newdata)
+corrplot(O, method = "color")
+```
+When the missing data is present, we don't get correlation value between dissimilar variables. 
+When the missing data is omitted, we get correlation data for all the relations.
+
+d) One version of single imputation appropriate for longitudinal data is called “hot-deck”
+imputation or “last observed carried forward (locf)”. Here the data are ordered (typically
+by time) and the last observed value is imputed into any time slots without an observed
+value. Using the data above perform two versions of LOCF and recalculate your
+correlation plots.
+i. Carry the last observation forward separately for each of the 3 categories
+Ans:
+```{r}
+#duplicate the dataframe for this imputation
+pwide <- wide
+library(zoo)
+
+#use na.locf to replace missing data columnwise
+pwide <- na.locf(pwide)
+
+#correlation plot
+p<- cor(pwide)
+corrplot(p, method = "color")
+```
+ii. Carry the last observation forward from the time of day (i.e. impute glucose
+before lunch using glucose before breakfast).
+Ans:
+
+```{r}
+#duplicate data for imputation
+nwide <- wide
+
+#first we apply na.locf along the rows
+
+nwide<- t(apply(nwide, 1, function(x) na.locf(x, fromLast = F, na.rm = F)))
+
+#now we use a for loop to replace missing breakfast values with values from previous dinner 
+
+for (i in 1:nrow(nwide)) {
+if ( is.na(nwide[i,1])) {
+  nwide[i,1] = na.locf(nwide[i-1,3])
+}
+}
+
+#now we apply na.locf again to to fill in the rows that were not filled due to missing breakfast value
+nwide<- t(apply(nwide, 1, function(x) na.locf(x, fromLast = F, na.rm = F)))
+
+#generate plot
+r<- cor(nwide)
+corrplot(r, method = "color")
+```
+iii. Comment on the implications of each approach. Which approach do you think is
+better?
+
+Ans: The first method replaces the data using known value for the same
+observation from the previous day, 
+whereas the second approach uses the known value for a different observation
+from the same day or previous night. The second approach had higher
+correlation coefficients than the first approach. I think the first approach
+is better because it can provide more consistent data because it is 
+taken from similar observation.
+
+
+4. Comparing Results
+Choose someone in the class to compare your results to (who used a different person).
+Comment on any similarities or differences. Mention the name of the person you worked with.
+
+Ans: I compared my results with Dylan Crocker. My data has higher values for lunch and dinner than his data, as seen on the time series plot.His correlation plots had lower coefficients than my plots as well, so my data had more correlation than his data.
