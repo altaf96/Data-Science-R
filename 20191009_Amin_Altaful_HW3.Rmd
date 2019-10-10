@@ -1,0 +1,212 @@
+---
+title: "Homework 4 BME590"
+author: "Altaful Amin"
+date: "10/3/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#Question 1: Get Diabetes Data Set
+```{r}
+#1.b. reading data into R
+
+data <- read.csv("diabetes_data.csv", header =TRUE)
+```
+
+
+```{r}
+#1.c. Structure of data frame
+
+str(data)
+```
+
+
+
+```{r}
+#1.c. number of variables(columns)
+
+ncol(data)
+```
+# 50 variables in the dataframe
+
+```{r}
+#1.c. type of data in readmitted column
+
+typeof(data$readmitted)
+
+
+```
+#integer data in readmitted column of data frame
+
+
+
+
+Question 2: Preparing Data Set
+```{r}
+#2.b. Changing levels to "0" and "1" in readmitted
+#copy of dataframe
+tdata <- data
+
+library(plyr)
+
+#change levels in copied dataframe
+levels(tdata$readmitted)[3] <- 0
+levels(tdata$readmitted)[2] <- 1
+levels(tdata$readmitted)[1] <- 1
+```
+
+
+```{r}
+
+#2.c. 
+#new data set with only the variables of interest
+newdata <- subset(tdata, select = c(readmitted, num_lab_procedures, number_diagnoses, num_medications))
+
+#Changing data type of readmitted column to numeric
+newdata$readmitted <- as.numeric(levels(newdata$readmitted))[as.integer(newdata$readmitted)]
+
+
+```
+
+```{r}
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(grid)
+```
+
+
+
+#Question 3: Principal COmponent Analysis
+```{r}
+#3.a. scatterplot matrix of variables of interest
+library(GGally)
+
+p<- ggpairs(newdata)
+print(p)
+```
+# A positive correlation exists between all the variables.
+The readmitted data has spikes at 0 and 1 as expected.
+The no. of lab procedures has a distribution centered around 45.
+The no. of diagnoses has multiple spikes with the highest being at 8.
+The no.of medications is skewed left.
+
+
+
+```{r}
+#3.b. principal components of the data
+newdata.pca <- princomp(newdata, cor = TRUE)
+
+```
+
+
+
+
+```{r}
+#3.c. summary of principal components
+summary(newdata.pca)
+```
+
+
+
+```{r}
+#3.d. loadings to show all values
+print(loadings(newdata.pca))
+```
+
+
+
+
+```{r}
+#3.e. scree plot of pca data
+screeplot(newdata.pca)
+```
+
+```{r}
+#3.f. biplot of pca data
+biplot(newdata.pca)
+```
+
+#3.g. Component 1 explains 37.126% of the total variation of the data.
+#     Component 2 explains 24.873% of the total variation of the data.
+#     Component 3 explains 20.734% of the total variation of the data.
+     
+     
+#3.h. We need 3 components to explain at least 75% of the total variability 
+#    of the data. Using the first 3 components, we can explain
+#    82.733% of the  total variation of the data. 
+
+
+
+
+
+#4 Visualizing Principal Components
+```{r}
+#4.a. 2d plots of PC1 against PC2, PC1 against PC3, and PC2 against PC3
+
+
+#isolating the principal components data
+PCtotal <- as.data.frame(newdata.pca$scores)
+
+
+#adding readmitted column to PCA data frame
+PCtotal[,5] <- newdata$readmitted
+
+names(PCtotal) <- c("PC1","PC2","PC3","PC4","Readmitted")
+
+
+
+
+```
+
+
+
+```{r}
+#generating the 2d plots
+
+p1 <- ggplot(PCtotal, aes(x= PC1, y=PC2, color = Readmitted)) + geom_point()
+p2 <- ggplot(PCtotal, aes(x= PC1, y=PC3, color = Readmitted)) + geom_point()
+p3 <- ggplot(PCtotal, aes(x= PC2, y=PC3, color = Readmitted)) + geom_point()
+
+plot_grid(p1,p2,p3, labels = "AUTO")
+
+```
+
+
+
+
+```{r}
+ #4.b. 3d plot of principal components that you can rotate
+
+library(car)
+library(rgl)
+
+
+plot3d(PCtotal$PC1, PCtotal$PC2, PCtotal$PC3, type="s", size=1, lit=TRUE,main = "PC1 VS PC2 VS PC3",sub="3-D Plot")
+
+
+#plot opens on new window and can be rotated
+
+```
+
+#4.c. On the PC1 vs PC2 plot, PC1 has more variability than PC2. 
+     On the PC1 vs PC3 plot, PC1 has more variability than PC3.
+     On the PC2 vs PC3 plot, PC3 has more variability than PC1.
+ From the loadings data, we make the following observations: 
+ PC1 has a lower coefficient of readmitted compared to PC2 and PC3.
+  PC2 has a lower positive coefficient of number of lab procedures compared 
+  to PC1 and PC3 which have a higher negative coefficient.
+  PC2 also has a smaller coefficient for number of diagnosis compared to
+  PC1 and PC3. 
+  PC3 is not affected by number of medications. 
+  The scree plot shows us that PC1 accounts for the most variation. 
+
+
+
+                  
